@@ -29,7 +29,7 @@ const App = () => {
   return (
     <div>
       <Feedback handleClick={handleClick} />
-      <Statistics data={Object.entries(statisticsData)} />
+      <Statistics data={statisticsData} />
     </div>
   );
 };
