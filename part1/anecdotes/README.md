@@ -1,1 +1,1 @@
-ANECDOTES project from part1 of FullStackOpen 2022
+ANECDOTES project from FullStackOpen 2022, part1
