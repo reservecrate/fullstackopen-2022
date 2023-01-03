@@ -1,1 +1,1 @@
-COURSEINFO project from FullStackOpen 2022, part1
+COURSEINFO project from FullStackOpen 2022, parts 1-2
