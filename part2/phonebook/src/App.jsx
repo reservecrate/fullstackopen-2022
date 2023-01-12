@@ -1,14 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Filter from './components/Filter';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
-import personsData from './data/personsData.json';
+import axios from 'axios';
 
 const App = () => {
-  const [persons, setPersons] = useState(personsData);
+  const [persons, setPersons] = useState([]);
+  const [filteredPersons, setFilteredPersons] = useState([]);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const hook = () => {
+    axios.get('http://localhost:3001/persons').then(res => {
+      const { data } = res;
+      setPersons(data);
+      setFilteredPersons(data);
+    });
+  };
+
+  useEffect(hook, []);
 
   const alreadyExists = name => {
     const names = persons.map(person => person.name);
@@ -26,10 +37,11 @@ const App = () => {
         break;
       case 'searchQueryInput':
         setSearchQuery(value);
-        const filteredPersons = personsData.filter(person =>
-          person.name.toLowerCase().includes(value.toLowerCase())
+        setFilteredPersons(
+          persons.filter(person =>
+            person.name.toLowerCase().includes(value.toLowerCase())
+          )
         );
-        setPersons(filteredPersons);
         break;
       default:
         console.log(
@@ -48,7 +60,7 @@ const App = () => {
     if (alreadyExists(newName))
       window.alert(`${newName.trim()} already exists in the phonebook!`);
     else {
-      setPersons([...persons, newPerson]);
+      setFilteredPersons([...filteredPersons, newPerson]);
       setNewName('');
       setNewPhone('');
     }
@@ -68,7 +80,7 @@ const App = () => {
         }}
       />
       <h2>Phone numbers</h2>
-      <Persons persons={persons} />
+      <Persons persons={filteredPersons} />
     </div>
   );
 };
