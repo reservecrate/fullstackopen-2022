@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Filter from './components/Filter';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
-import axios from 'axios';
+import personsService from './services/persons';
 
 const App = () => {
   const [persons, setPersons] = useState([]);
@@ -12,10 +12,9 @@ const App = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const hook = () => {
-    axios.get('http://localhost:3001/persons').then(res => {
-      const { data } = res;
-      setPersons(data);
-      setFilteredPersons(data);
+    personsService.getAllPersons().then(personsData => {
+      setPersons(personsData);
+      setFilteredPersons(personsData);
     });
   };
 
@@ -39,7 +38,7 @@ const App = () => {
         setSearchQuery(value);
         setFilteredPersons(
           persons.filter(person =>
-            person.name.toLowerCase().includes(value.toLowerCase())
+            person.name.toLowerCase().includes(value.trim().toLowerCase())
           )
         );
         break;
@@ -55,15 +54,53 @@ const App = () => {
     const newPerson = {
       name: newName,
       phone: newPhone,
-      id: persons.length + 1
+      id: persons.length + Math.floor(Math.random() * 9999)
     };
-    if (alreadyExists(newName))
-      window.alert(`${newName.trim()} already exists in the phonebook!`);
-    else {
-      setFilteredPersons([...filteredPersons, newPerson]);
+    if (alreadyExists(newName)) {
+      if (
+        window.confirm(
+          `${newName} has already been added to the phonebook. Would you like to replace the old phone number with a new one?`
+        )
+      )
+        updatePerson();
+    } else {
+      personsService.createPerson(newPerson).then(newPersonObj => {
+        setPersons([...filteredPersons, newPersonObj]);
+        setFilteredPersons([...filteredPersons, newPersonObj]);
+      });
       setNewName('');
       setNewPhone('');
     }
+  };
+
+  const deletePerson = id => {
+    const matchedPerson = filteredPersons.find(person => person.id === id);
+    if (window.confirm(`Delete ${matchedPerson.name}?`)) {
+      personsService.deletePerson(id);
+      setPersons(filteredPersons.filter(person => person.id !== id));
+      setFilteredPersons(filteredPersons.filter(person => person.id !== id));
+    }
+  };
+
+  const updatePerson = () => {
+    const matchedPersonIndex = persons.findIndex(
+      person => person.name === newName
+    );
+    const matchedPerson = JSON.parse(
+      JSON.stringify(persons.find(person => person.name === newName))
+    );
+    const matchedPersonId = matchedPerson.id;
+    matchedPerson.phone = newPhone;
+    personsService
+      .updatePerson(matchedPersonId, matchedPerson)
+      .then(updatedPersonObj => {
+        const filteredPersonsCopy = JSON.parse(JSON.stringify(filteredPersons));
+        filteredPersonsCopy.splice(matchedPersonIndex, 1, updatedPersonObj);
+        setPersons(filteredPersonsCopy);
+        setFilteredPersons(filteredPersonsCopy);
+        setNewName('');
+        setNewPhone('');
+      });
   };
 
   return (
@@ -80,7 +117,7 @@ const App = () => {
         }}
       />
       <h2>Phone numbers</h2>
-      <Persons persons={filteredPersons} />
+      <Persons persons={filteredPersons} deletePerson={deletePerson} />
     </div>
   );
 };
