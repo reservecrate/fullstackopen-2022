@@ -3,6 +3,7 @@ import Filter from './components/Filter';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
 import personsService from './services/persons';
+import Notification from './components/Notification';
 
 const App = () => {
   const [persons, setPersons] = useState([]);
@@ -10,6 +11,10 @@ const App = () => {
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [notification, setNotification] = useState({
+    message: '',
+    styles: {}
+  });
 
   const hook = () => {
     personsService.getAllPersons().then(personsData => {
@@ -21,8 +26,8 @@ const App = () => {
   useEffect(hook, []);
 
   const alreadyExists = name => {
-    const names = persons.map(person => person.name);
-    return names.includes(name.trim());
+    const names = persons.map(person => person.name.toLowerCase());
+    return names.includes(name.trim().toLowerCase());
   };
 
   const handleInputChange = e => {
@@ -52,21 +57,31 @@ const App = () => {
   const handleSubmit = e => {
     e.preventDefault();
     const newPerson = {
-      name: newName,
+      name: newName.trim(),
       phone: newPhone,
       id: persons.length + Math.floor(Math.random() * 9999)
     };
-    if (alreadyExists(newName)) {
-      if (
-        window.confirm(
-          `${newName} has already been added to the phonebook. Would you like to replace the old phone number with a new one?`
-        )
-      )
-        updatePerson();
-    } else {
+    if (alreadyExists(newName))
+      // if (
+      //   window.confirm(
+      //     `${newName.trim()} has already been added to the phonebook. Would you like to replace the old phone number with a new one?`
+      //   )
+      // )
+      updatePerson();
+    else {
       personsService.createPerson(newPerson).then(newPersonObj => {
         setPersons([...filteredPersons, newPersonObj]);
         setFilteredPersons([...filteredPersons, newPersonObj]);
+        setNotification({
+          styles: {
+            borderStyle: 'solid',
+            borderColor: 'lime',
+            borderRadius: '15px',
+            paddingLeft: '5px'
+          },
+          message: `${newName} has been successfully added to the phonebook`
+        });
+        setTimeout(() => setNotification(''), 4000);
       });
       setNewName('');
       setNewPhone('');
@@ -74,20 +89,24 @@ const App = () => {
   };
 
   const deletePerson = id => {
-    const matchedPerson = filteredPersons.find(person => person.id === id);
-    if (window.confirm(`Delete ${matchedPerson.name}?`)) {
-      personsService.deletePerson(id);
-      setPersons(filteredPersons.filter(person => person.id !== id));
-      setFilteredPersons(filteredPersons.filter(person => person.id !== id));
-    }
+    // const matchedPerson = filteredPersons.find(person => person.id === id);
+    // if (window.confirm(`Delete ${matchedPerson.name}?`)) {
+    personsService.deletePerson(id);
+    setPersons(filteredPersons.filter(person => person.id !== id));
+    setFilteredPersons(filteredPersons.filter(person => person.id !== id));
+    // }
   };
 
   const updatePerson = () => {
     const matchedPersonIndex = persons.findIndex(
-      person => person.name === newName
+      person => person.name.toLowerCase() === newName.trim().toLowerCase()
     );
     const matchedPerson = JSON.parse(
-      JSON.stringify(persons.find(person => person.name === newName))
+      JSON.stringify(
+        persons.find(
+          person => person.name.toLowerCase() === newName.trim().toLowerCase()
+        )
+      )
     );
     const matchedPersonId = matchedPerson.id;
     matchedPerson.phone = newPhone;
@@ -98,8 +117,32 @@ const App = () => {
         filteredPersonsCopy.splice(matchedPersonIndex, 1, updatedPersonObj);
         setPersons(filteredPersonsCopy);
         setFilteredPersons(filteredPersonsCopy);
+        setNotification({
+          styles: {
+            borderStyle: 'solid',
+            borderColor: 'lime',
+            borderRadius: '15px',
+            paddingLeft: '5px'
+          },
+          message: `${updatedPersonObj.name}'s phone number has been successfully updated`
+        });
+        setTimeout(() => setNotification(''), 4000);
         setNewName('');
         setNewPhone('');
+      })
+      .catch(err => {
+        console.log(err);
+        setNotification({
+          styles: {
+            borderStyle: 'solid',
+            borderColor: 'red',
+            borderRadius: '15px',
+            paddingLeft: '5px',
+            color: 'red'
+          },
+          message: `Error - ${matchedPerson.name} no longer exists in the phonebook`
+        });
+        setTimeout(() => setNotification(''), 4000);
       });
   };
 
@@ -117,6 +160,7 @@ const App = () => {
         }}
       />
       <h2>Phone numbers</h2>
+      <Notification notification={notification} />
       <Persons persons={filteredPersons} deletePerson={deletePerson} />
     </div>
   );

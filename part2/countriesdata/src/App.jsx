@@ -14,6 +14,7 @@ const App = () => {
       setCountries(data);
       setFilteredCountries(data);
     });
+
   };
   useEffect(hook, []);
 
@@ -50,6 +51,8 @@ const App = () => {
       </div>
       {filteredCountries.length === 1 ? (
         <Country countryData={filteredCountries[0]} />
+      ) : filteredCountries.length > 10 && searchQuery !== '' ? (
+        <p>Too many matches, please enter a more specific filter</p>
       ) : (
         <CountriesList countriesData={filteredCountries} />
       )}
